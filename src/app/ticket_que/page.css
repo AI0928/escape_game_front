@@ -21,6 +21,15 @@
   margin-left: 10px;
 }
 
+
+.number-input {
+  padding: 8px;
+  width: 100%;
+  font-size: 24px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
 .header {
   position: fixed;
   top: 0;
