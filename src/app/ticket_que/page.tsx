@@ -3,67 +3,75 @@ import React, { useState, useEffect } from 'react';
 import Description from './Description'; // パスはプロジェクト構成に合わせて調整
 import './page.css'; // スタイルシートのパス
 import descriptionImage from './descriptionImage.png'; // パスはプロジェクト構成に合わせて調整
-import Header from './Header'; // ヘッダーコンポーネントのインポート
 
 type Ticket = {
+    id: number;
     ticket_number: string;
     number_of_people: number;
     status: string;
 };
 
 const TicketQuePage: React.FC = () => {
-    const [waitGroupCount, setWaitGroupCount] = useState<number>(0);
-    const [currentGroupNumber, setCurrentGroupNumber] = useState<number>(0);
     // 表示する内容を管理するstate
-    const [displayText, setDisplayText] = useState(waitGroupCount);
+    const [displayText, setDisplayText] = useState(0);
     const [showTitle, setShowTitle] = useState('待ち組数');
     const [showGroup, setShowGroup] = useState(true);
     const [loading, setLoading] = useState(true); // 追加
     const [inputNumber, setInputNumber] = useState<string>('');
+    const [tickets, setTickets] = useState<Ticket[]>([]); // チケットデータを保存するstate
 
+    const getWaitCount = (inputValue: string) => {
+        // 入力された番号より’終了’を除いた若い数の合計
+        // inputNumber は state で保持していると仮定
+        let cNumValue = 0;
+        if (inputValue){
+            const timesNum = tickets.find(
+                (t) => t.ticket_number === inputValue && t.status !== '終了'
+            )?.id;
+            cNumValue = timesNum ?? 0;
+            console.log('Input number:', inputValue, 'Corresponding id:', timesNum);
+        }
+
+        for (const ticket of tickets) {
+            console.log(`Ticket ID: ${ticket.id}, cNum: ${cNumValue}`);
+        }
+        const waitCount = tickets.filter(ticket =>
+            ticket.status !== '終了' && cNumValue && Number(ticket.id) < cNumValue
+        ).length;
+        console.log('Fetched tickets:', waitCount);
+        setDisplayText(waitCount);
+        return
+    }
+
+    const getCallCount = () => {
+        // "呼び出し中"の最大番号
+        const calledTickets = tickets
+            .filter(ticket => ticket.status === '呼び出し中')
+            .map(ticket => Number(ticket.ticket_number))
+            .filter(num => !isNaN(num));
+        const maxCalled = calledTickets.length > 0 ? Math.max(...calledTickets) : 0;
+        setDisplayText(maxCalled);
+        return
+    }
     useEffect(() => {
         const fetchTickets = async () => {
             try {
                 const res = await fetch('https://fastapi-on-vercel-pi.vercel.app/api/tickets');
                 const data: Ticket[] = await res.json();
-
-                // 入力された番号より’終了’を除いた若い数の合計
-                // inputNumber は state で保持していると仮定
-                const waitCount = data.filter(ticket => {
-                    // status が "終了" のものは対象外
-                    if (ticket.status === '終了') return false;
-
-                    // 入力番号がある場合のみ絞り込み
-                    if (inputNumber) {
-                        return Number(ticket.ticket_number) < Number(inputNumber);
-                    }
-
-                    return false; // 入力番号がなければカウントしない
-                }).length;
+                setTickets(data); // チケットデータをstateに保存
                 console.log('Fetched tickets:', data);
-                setWaitGroupCount(waitCount);
-
-                // "呼び出し中"の最大番号
-                const calledTickets = data
-                    .filter(ticket => ticket.status === '呼び出し中')
-                    .map(ticket => Number(ticket.ticket_number))
-                    .filter(num => !isNaN(num));
-                const maxCalled = calledTickets.length > 0 ? Math.max(...calledTickets) : 0;
-                setCurrentGroupNumber(maxCalled);
 
                 // 初期表示
-                setDisplayText(waitCount);
+                setDisplayText(0);
             } catch (e) {
                 // エラー時は0表示
-                setWaitGroupCount(0);
-                setCurrentGroupNumber(0);
                 setDisplayText(0);
             } finally {
                 setLoading(false); // 読み込み完了
             }
         };
         fetchTickets();
-    }, [inputNumber]);
+    }, []);
 
     if (loading) {
         return (
@@ -90,22 +98,21 @@ const TicketQuePage: React.FC = () => {
                         <div className="button-group">
                             <div className="button-row">
                                 <input
+                                    onChange={(e) => setInputNumber(e.target.value)}
                                     type="number"
                                     placeholder="番号を入力"
-                                    value={inputNumber}
-                                    onChange={(e) => setInputNumber(e.target.value)}
                                     className="number-input"
                                 />
                             </div>
                             <div className="button-row">
                                 <button onClick={() => {
                                     setShowTitle('待ち組数');
-                                    setDisplayText(waitGroupCount);
+                                    getWaitCount(inputNumber);
                                 }}>待ち組数</button>
 
                                 <button onClick={() => {
                                     setShowTitle('お呼び出し番号');
-                                    setDisplayText(currentGroupNumber);
+                                    getCallCount();
                                 }}>お呼び出し番号</button>
                             </div>
                             <div className="button-row">
