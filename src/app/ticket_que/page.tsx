@@ -46,7 +46,7 @@ const TicketQuePage: React.FC = () => {
     const getCallCount = () => {
         // "呼び出し中"の最大番号
         const calledTickets = tickets
-            .filter(ticket => ticket.status === '呼び出し中')
+            .filter(ticket => ticket.status === '待合室呼び出し中')
             .map(ticket => Number(ticket.ticket_number))
             .filter(num => !isNaN(num));
         const maxCalled = calledTickets.length > 0 ? Math.max(...calledTickets) : 0;
@@ -83,7 +83,7 @@ const TicketQuePage: React.FC = () => {
     return (
         <div>
             <div className="header">
-                {/* <img src="/reload_icon.png" alt="Logo" className="logo" onClick={() => window.location.reload()}/> */}
+                <img src="/reload_icon.png" alt="Logo" className="logo" onClick={() => window.location.reload()}/> 
             </div>
             <div className="title">脱出ゲーム</div>
             <div className="attraction-queue">
